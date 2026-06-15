@@ -144,6 +144,12 @@ class SubscriptionPlan(BaseModel):
     interval: str
     features: List[str]
 
+class PlanCreate(BaseModel):
+    name: str
+    price: float
+    interval: str
+    features: List[str]
+
 class CheckoutRequest(BaseModel):
     plan_id: str
     origin_url: str
@@ -203,6 +209,13 @@ class Notification(BaseModel):
 class Achievement(BaseModel):
     model_config = ConfigDict(extra="ignore")
     achievement_id: str
+    name: str
+    description: str
+    icon: str
+    condition_type: str
+    condition_value: int
+
+class AchievementCreate(BaseModel):
     name: str
     description: str
     icon: str
@@ -394,36 +407,42 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
 
 @api_router.get("/subscriptions/plans")
 async def get_plans():
-    plans = [
-        {
-            "plan_id": "monthly",
-            "name": "Plan Mensual",
-            "price": 29.99,
-            "interval": "monthly",
-            "features": ["Acceso a todos los cursos", "Certificados", "Soporte prioritario"]
-        },
-        {
-            "plan_id": "annual",
-            "name": "Plan Anual",
-            "price": 299.99,
-            "interval": "annual",
-            "features": ["Acceso a todos los cursos", "Certificados", "Soporte prioritario", "Ahorra 2 meses"]
-        }
-    ]
+    plans = await db.subscription_plans.find({}, {"_id": 0}).to_list(1000)
+    
+    # Initialize default plans if none exist
+    if not plans:
+        default_plans = [
+            {
+                "plan_id": "monthly",
+                "name": "Plan Mensual",
+                "price": 29.99,
+                "interval": "monthly",
+                "features": ["Acceso a todos los cursos", "Certificados", "Soporte prioritario"],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            {
+                "plan_id": "annual",
+                "name": "Plan Anual",
+                "price": 299.99,
+                "interval": "annual",
+                "features": ["Acceso a todos los cursos", "Certificados", "Soporte prioritario", "Ahorra 2 meses"],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        ]
+        await db.subscription_plans.insert_many(default_plans)
+        plans = default_plans
+    
     return plans
 
 @api_router.post("/subscriptions/checkout")
 async def create_checkout(req: CheckoutRequest, current_user: User = Depends(get_current_user)):
     
-    plans = {
-        "monthly": 29.99,
-        "annual": 299.99
-    }
-    
-    if req.plan_id not in plans:
+    # Get plan from database
+    plan = await db.subscription_plans.find_one({"plan_id": req.plan_id}, {"_id": 0})
+    if not plan:
         raise HTTPException(status_code=400, detail="Invalid plan")
     
-    amount = plans[req.plan_id]
+    amount = plan["price"]
     success_url = f"{req.origin_url}/payment/success?session_id={{{{CHECKOUT_SESSION_ID}}}}"
     cancel_url = f"{req.origin_url}/pricing"
     
@@ -539,6 +558,64 @@ async def stripe_webhook(request: Request):
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+# Subscription Plans Management (Admin)
+@api_router.post("/subscriptions/plans")
+async def create_plan(req: PlanCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Generate plan_id from name
+    plan_id = req.name.lower().replace(" ", "_")
+    
+    # Check if plan already exists
+    existing = await db.subscription_plans.find_one({"plan_id": plan_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Plan with this name already exists")
+    
+    plan_doc = {
+        "plan_id": plan_id,
+        "name": req.name,
+        "price": req.price,
+        "interval": req.interval,
+        "features": req.features,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.subscription_plans.insert_one(plan_doc)
+    
+    plan = await db.subscription_plans.find_one({"plan_id": plan_id}, {"_id": 0})
+    return SubscriptionPlan(**plan)
+
+@api_router.put("/subscriptions/plans/{plan_id}")
+async def update_plan(plan_id: str, req: PlanCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    plan = await db.subscription_plans.find_one({"plan_id": plan_id})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    update_data = {
+        "name": req.name,
+        "price": req.price,
+        "interval": req.interval,
+        "features": req.features
+    }
+    await db.subscription_plans.update_one({"plan_id": plan_id}, {"$set": update_data})
+    
+    updated = await db.subscription_plans.find_one({"plan_id": plan_id}, {"_id": 0})
+    return SubscriptionPlan(**updated)
+
+@api_router.delete("/subscriptions/plans/{plan_id}")
+async def delete_plan(plan_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.subscription_plans.delete_one({"plan_id": plan_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    return {"message": "Plan deleted successfully"}
 
 @api_router.get("/courses")
 async def get_courses():
@@ -1029,6 +1106,61 @@ async def get_user_achievements(current_user: User = Depends(get_current_user)):
             ua["achievement_icon"] = achievement["icon"]
     
     return user_achievements
+
+@api_router.post("/achievements")
+async def create_achievement(req: AchievementCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    achievement_id = f"ach_{uuid.uuid4().hex[:12]}"
+    achievement_doc = {
+        "achievement_id": achievement_id,
+        "name": req.name,
+        "description": req.description,
+        "icon": req.icon,
+        "condition_type": req.condition_type,
+        "condition_value": req.condition_value,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.achievements.insert_one(achievement_doc)
+    
+    achievement = await db.achievements.find_one({"achievement_id": achievement_id}, {"_id": 0})
+    return Achievement(**achievement)
+
+@api_router.put("/achievements/{achievement_id}")
+async def update_achievement(achievement_id: str, req: AchievementCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    achievement = await db.achievements.find_one({"achievement_id": achievement_id})
+    if not achievement:
+        raise HTTPException(status_code=404, detail="Achievement not found")
+    
+    update_data = {
+        "name": req.name,
+        "description": req.description,
+        "icon": req.icon,
+        "condition_type": req.condition_type,
+        "condition_value": req.condition_value
+    }
+    await db.achievements.update_one({"achievement_id": achievement_id}, {"$set": update_data})
+    
+    updated = await db.achievements.find_one({"achievement_id": achievement_id}, {"_id": 0})
+    return Achievement(**updated)
+
+@api_router.delete("/achievements/{achievement_id}")
+async def delete_achievement(achievement_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.achievements.delete_one({"achievement_id": achievement_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Achievement not found")
+    
+    # Also delete user achievements with this ID
+    await db.user_achievements.delete_many({"achievement_id": achievement_id})
+    
+    return {"message": "Achievement deleted successfully"}
 
 async def check_and_award_achievements(user_id: str):
     """Check if user qualifies for new achievements"""

@@ -25,7 +25,10 @@ export const Sidebar = () => {
 
   const adminNavItems = [
     { path: '/admin/courses', icon: Settings, label: 'Gestionar Cursos', testId: 'nav-admin-courses' },
-    { path: '/admin/analytics', icon: TrendingUp, label: 'An\u00e1lisis', testId: 'nav-admin-analytics' },
+    { path: '/admin/live-sessions', icon: Video, label: 'Gestionar Sesiones', testId: 'nav-admin-sessions' },
+    { path: '/admin/plans', icon: CreditCard, label: 'Gestionar Planes', testId: 'nav-admin-plans' },
+    { path: '/admin/achievements', icon: Trophy, label: 'Gestionar Logros', testId: 'nav-admin-achievements' },
+    { path: '/admin/analytics', icon: TrendingUp, label: 'Análisis', testId: 'nav-admin-analytics' },
   ];
 
   return (
