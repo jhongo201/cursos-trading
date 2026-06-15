@@ -16,18 +16,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const AdminCoursesPage = () => {
   const [courses, setCourses] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    thumbnail: ''
+    thumbnail: '',
+    category_id: ''
   });
   const navigate = useNavigate();
 
@@ -39,7 +48,17 @@ export const AdminCoursesPage = () => {
 
   useEffect(() => {
     fetchCourses();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${API}/categories`);
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Categories fetch error:', error);
+    }
+  };
 
   const fetchCourses = async () => {
     try {
@@ -77,7 +96,7 @@ export const AdminCoursesPage = () => {
 
       setDialogOpen(false);
       setEditingCourse(null);
-      setFormData({ title: '', description: '', thumbnail: '' });
+      setFormData({ title: '', description: '', thumbnail: '', category_id: '' });
       fetchCourses();
     } catch (error) {
       console.error('Course save error:', error);
@@ -90,7 +109,8 @@ export const AdminCoursesPage = () => {
     setFormData({
       title: course.title,
       description: course.description,
-      thumbnail: course.thumbnail
+      thumbnail: course.thumbnail,
+      category_id: course.category_id || ''
     });
     setDialogOpen(true);
   };
@@ -114,7 +134,7 @@ export const AdminCoursesPage = () => {
   const handleDialogClose = () => {
     setDialogOpen(false);
     setEditingCourse(null);
-    setFormData({ title: '', description: '', thumbnail: '' });
+    setFormData({ title: '', description: '', thumbnail: '', category_id: '' });
   };
 
   if (loading) {
@@ -176,6 +196,24 @@ export const AdminCoursesPage = () => {
                     />
                   </div>
                   <div>
+                    <Label htmlFor="category">Categoría</Label>
+                    <Select
+                      value={formData.category_id}
+                      onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                    >
+                      <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100" data-testid="category-select">
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-800 border-zinc-700 text-zinc-100">
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.category_id} value={cat.category_id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
                     <Label>Imagen del Curso</Label>
                     <div className="grid grid-cols-3 gap-3 mt-2">
                       {thumbnails.map((thumb, idx) => (
@@ -185,7 +223,7 @@ export const AdminCoursesPage = () => {
                           onClick={() => setFormData({ ...formData, thumbnail: thumb })}
                           className={`border-2 rounded-lg overflow-hidden transition-all ${
                             formData.thumbnail === thumb
-                              ? 'border-zinc-950 ring-2 ring-zinc-950'
+                              ? 'border-amber-500 ring-2 ring-amber-500'
                               : 'border-zinc-800 hover:border-zinc-700'
                           }`}
                         >

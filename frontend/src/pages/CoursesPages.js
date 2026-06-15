@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Sidebar } from '@/components/Sidebar';
+import { SearchFilters } from '@/components/SearchFilters';
+import { RatingStars } from '@/components/RatingStars';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Award, Play, CheckCircle2, Circle } from 'lucide-react';
+import { BookOpen, Clock, Award, Play, CheckCircle2, Circle, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -31,6 +34,10 @@ export const CoursesPage = () => {
     }
   };
 
+  const handleSearch = (filteredCourses) => {
+    setCourses(filteredCourses);
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen">
@@ -54,6 +61,8 @@ export const CoursesPage = () => {
             <p className="text-zinc-600">Explora nuestra colección de cursos y comienza a aprender</p>
           </div>
 
+          <SearchFilters onSearch={handleSearch} />
+
           {courses.length === 0 ? (
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
               <BookOpen className="h-12 w-12 text-zinc-400 mx-auto mb-4" strokeWidth={1.5} />
@@ -75,12 +84,25 @@ export const CoursesPage = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-6">
+                    {course.category_name && (
+                      <span className="inline-block px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-500 rounded mb-2">
+                        {course.category_name}
+                      </span>
+                    )}
                     <h3 className="text-lg font-heading font-semibold text-zinc-50 mb-2">{course.title}</h3>
                     <p className="text-sm text-zinc-600 mb-4 line-clamp-3">{course.description}</p>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-3">
                       <span className="text-xs text-zinc-500">Por {course.instructor_name}</span>
                       <span className="text-xs text-zinc-500">{course.lesson_count} lecciones</span>
                     </div>
+                    {course.total_ratings > 0 && (
+                      <div className="flex items-center gap-2">
+                        <RatingStars rating={course.average_rating} size="small" />
+                        <span className="text-sm text-zinc-500">
+                          {course.average_rating.toFixed(1)} ({course.total_ratings})
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </Link>
               ))}
@@ -98,6 +120,9 @@ export const CourseDetailPage = () => {
   const [lessons, setLessons] = useState([]);
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userRating, setUserRating] = useState(0);
+  const [userReview, setUserReview] = useState('');
+  const [showRatingForm, setShowRatingForm] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -135,6 +160,29 @@ export const CourseDetailPage = () => {
       return;
     }
     navigate(`/courses/${courseId}/lesson/${lessonId}`);
+
+  const handleSubmitRating = async () => {
+    if (userRating === 0) {
+      toast.error('Por favor selecciona una calificación');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API}/courses/${courseId}/ratings`,
+        { rating: userRating, review: userReview },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('¡Gracias por tu valoración!');
+      setShowRatingForm(false);
+      fetchCourseData();
+    } catch (error) {
+      console.error('Rating error:', error);
+      toast.error('Error al enviar valoración');
+    }
+  };
+
   };
 
   if (loading) {
@@ -179,13 +227,59 @@ export const CourseDetailPage = () => {
                   {course.title}
                 </h1>
                 <p className="text-zinc-600 mb-4">{course.description}</p>
-                <div className="flex flex-wrap gap-4 text-sm text-zinc-600 mb-6">
+                <div className="flex flex-wrap gap-4 text-sm text-zinc-600 mb-4">
                   <span className="flex items-center gap-1">
                     <BookOpen className="h-4 w-4" strokeWidth={1.5} />
                     {lessons.length} lecciones
                   </span>
                   <span>Por {course.instructor_name}</span>
+                  {course.category_name && (
+                    <span className="px-2 py-1 bg-amber-500/10 text-amber-500 rounded text-xs">
+                      {course.category_name}
+                    </span>
+                  )}
                 </div>
+                {course.total_ratings > 0 && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <RatingStars rating={course.average_rating} />
+                    <span className="text-zinc-400">
+                      {course.average_rating.toFixed(1)} ({course.total_ratings} valoraciones)
+                    </span>
+                  </div>
+                )}
+                <Button
+                  onClick={() => setShowRatingForm(!showRatingForm)}
+                  variant="outline"
+                  size="sm"
+                  className="mb-4"
+                  data-testid="rate-course-btn"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Valorar curso
+                </Button>
+                {showRatingForm && (
+                  <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 mb-4" data-testid="rating-form">
+                    <p className="text-sm text-zinc-300 mb-3">Tu valoración:</p>
+                    <div className="mb-3">
+                      <RatingStars rating={userRating} onRate={setUserRating} size="large" />
+                    </div>
+                    <Textarea
+                      value={userReview}
+                      onChange={(e) => setUserReview(e.target.value)}
+                      placeholder="Escribe tu opinión (opcional)"
+                      className="bg-zinc-900 border-zinc-700 text-zinc-100 mb-3"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <Button onClick={handleSubmitRating} size="sm" data-testid="submit-rating-btn">
+                        Enviar valoración
+                      </Button>
+                      <Button onClick={() => setShowRatingForm(false)} variant="outline" size="sm">
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {progressPercent > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
