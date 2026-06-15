@@ -1210,6 +1210,15 @@ async def get_live_sessions(status: Optional[str] = Query(None)):
     sessions = await db.live_sessions.find(query, {"_id": 0}).sort("scheduled_at", 1).to_list(1000)
     return sessions
 
+@api_router.get("/live-sessions/my-registrations")
+async def get_my_registrations(current_user: User = Depends(get_current_user)):
+    """Get all sessions the current user is registered for"""
+    registrations = await db.session_registrations.find(
+        {"user_id": current_user.user_id}, 
+        {"_id": 0}
+    ).to_list(1000)
+    return registrations
+
 @api_router.get("/live-sessions/{session_id}")
 async def get_live_session(session_id: str):
     session = await db.live_sessions.find_one({"session_id": session_id}, {"_id": 0})

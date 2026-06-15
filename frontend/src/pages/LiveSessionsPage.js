@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Sidebar } from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
-import { Video, Calendar, Clock, Users } from 'lucide-react';
+import { Video, Calendar, Clock, Users, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -11,35 +11,64 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export const LiveSessionsPage = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [registrations, setRegistrations] = useState(new Set());
+  const [registeringSession, setRegisteringSession] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSessions();
+    fetchData();
   }, []);
 
-  const fetchSessions = async () => {
+  const fetchData = async () => {
     try {
-      const response = await axios.get(`${API}/live-sessions?status=scheduled`);
-      setSessions(response.data);
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const [sessionsRes, regsRes] = await Promise.all([
+        axios.get(`${API}/live-sessions?status=scheduled`),
+        axios.get(`${API}/live-sessions/my-registrations`, { headers })
+      ]);
+      
+      setSessions(sessionsRes.data);
+      
+      // Create a Set of session IDs the user is registered for
+      const regSet = new Set(regsRes.data.map(reg => reg.session_id));
+      setRegistrations(regSet);
     } catch (error) {
-      console.error('Sessions fetch error:', error);
+      console.error('Fetch error:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRegister = async (sessionId) => {
+    setRegisteringSession(sessionId);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(
+      await axios.post(
         `${API}/live-sessions/${sessionId}/register`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('¡Registrado exitosamente!');
-      navigate(`/live-sessions/${sessionId}`);
+      toast.success('¡Registrado exitosamente! Recibirás una notificación antes de la sesión.');
+      
+      // Add to registrations set
+      setRegistrations(prev => new Set([...prev, sessionId]));
+      
+      // Refresh data to get updated attendee count
+      fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al registrarse');
+    } finally {
+      setRegisteringSession(null);
+    }
+  };
+
+  const handleJoinSession = (meetingUrl) => {
+    if (meetingUrl) {
+      window.open(meetingUrl, '_blank');
+    } else {
+      toast.error('El enlace de la sesión no está disponible aún');
     }
   };
 
@@ -125,16 +154,37 @@ export const LiveSessionsPage = () => {
                       Con: {session.instructor_name}
                     </div>
                     
-                    <Button
-                      onClick={() => handleRegister(session.session_id)}
-                      className="w-full"
-                      disabled={session.current_attendees >= session.max_attendees}
-                      data-testid={`register-${session.session_id}`}
-                    >
-                      {session.current_attendees >= session.max_attendees
-                        ? 'Sesión Llena'
-                        : 'Registrarse Ahora'}
-                    </Button>
+                    {registrations.has(session.session_id) ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400">
+                          <Check className="h-5 w-5" />
+                          <span className="font-medium">Ya estás registrado</span>
+                        </div>
+                        {session.meeting_url && (
+                          <Button
+                            onClick={() => handleJoinSession(session.meeting_url)}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Unirse a la Sesión
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => handleRegister(session.session_id)}
+                        className="w-full"
+                        disabled={session.current_attendees >= session.max_attendees || registeringSession === session.session_id}
+                        data-testid={`register-${session.session_id}`}
+                      >
+                        {registeringSession === session.session_id
+                          ? 'Registrando...'
+                          : session.current_attendees >= session.max_attendees
+                          ? 'Sesión Llena'
+                          : 'Registrarse Ahora'}
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
