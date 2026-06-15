@@ -153,20 +153,20 @@ export const AdminLessonsPage = () => {
       <div className="flex h-screen">
         <Sidebar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-950"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA]" data-testid="admin-lessons-page">
+    <div className="flex h-screen bg-[#0A0A0A]" data-testid="admin-lessons-page">
       <Sidebar />
       <div className="flex-1 overflow-auto">
         <div className="max-w-5xl mx-auto p-6 md:p-8">
           <Link
             to="/admin/courses"
-            className="inline-flex items-center gap-2 text-zinc-600 hover:text-zinc-950 mb-6 transition-colors"
+            className="inline-flex items-center gap-2 text-zinc-600 hover:text-zinc-50 mb-6 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
             Volver a cursos
@@ -174,7 +174,7 @@ export const AdminLessonsPage = () => {
 
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-heading font-bold text-zinc-950 mb-2">
+              <h1 className="text-3xl sm:text-4xl font-heading font-bold text-zinc-50 mb-2">
                 Lecciones de {course?.title}
               </h1>
               <p className="text-zinc-600">{lessons.length} lecciones</p>
@@ -284,9 +284,9 @@ export const AdminLessonsPage = () => {
           </div>
 
           {lessons.length === 0 ? (
-            <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
               <Video className="h-12 w-12 text-zinc-400 mx-auto mb-4" strokeWidth={1.5} />
-              <h3 className="text-xl font-heading font-semibold text-zinc-950 mb-2">
+              <h3 className="text-xl font-heading font-semibold text-zinc-50 mb-2">
                 No hay lecciones creadas
               </h3>
               <p className="text-zinc-600">Agrega tu primera lección para comenzar</p>
@@ -296,14 +296,14 @@ export const AdminLessonsPage = () => {
               {lessons.map((lesson) => (
                 <div
                   key={lesson.lesson_id}
-                  className="bg-white border border-zinc-200 rounded-lg p-6 flex items-center gap-4"
+                  className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 flex items-center gap-4"
                   data-testid={`admin-lesson-${lesson.lesson_id}`}
                 >
-                  <div className="flex-shrink-0 w-12 h-12 bg-zinc-50 rounded-lg flex items-center justify-center">
-                    <span className="text-lg font-heading font-bold text-zinc-950">{lesson.order}</span>
+                  <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 rounded-lg flex items-center justify-center">
+                    <span className="text-lg font-heading font-bold text-zinc-50">{lesson.order}</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-heading font-semibold text-zinc-950 mb-1">
+                    <h3 className="text-lg font-heading font-semibold text-zinc-50 mb-1">
                       {lesson.title}
                     </h3>
                     <p className="text-sm text-zinc-600 line-clamp-1">{lesson.content}</p>

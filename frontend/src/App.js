@@ -13,6 +13,7 @@ import { PaymentSuccessPage } from '@/pages/PaymentPages';
 import { CertificatesPage } from '@/pages/CertificatesPage';
 import { AdminCoursesPage } from '@/pages/AdminCoursesPage';
 import { AdminLessonsPage } from '@/pages/AdminLessonsPage';
+import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import '@/App.css';
 
 function AppRouter() {
@@ -105,6 +106,15 @@ function AppRouter() {
         element={
           <ProtectedRoute requireAdmin>
             <AdminLessonsPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/admin/analytics"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AnalyticsPage />
           </ProtectedRoute>
         }
       />

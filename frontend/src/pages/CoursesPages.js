@@ -36,28 +36,28 @@ export const CoursesPage = () => {
       <div className="flex h-screen">
         <Sidebar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-950"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA]" data-testid="courses-page">
+    <div className="flex h-screen bg-[#0A0A0A]" data-testid="courses-page">
       <Sidebar />
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6 md:p-8">
           <div className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-heading font-bold text-zinc-950 mb-2">
+            <h1 className="text-3xl sm:text-4xl font-heading font-bold text-zinc-50 mb-2">
               Catálogo de Cursos
             </h1>
             <p className="text-zinc-600">Explora nuestra colección de cursos y comienza a aprender</p>
           </div>
 
           {courses.length === 0 ? (
-            <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
               <BookOpen className="h-12 w-12 text-zinc-400 mx-auto mb-4" strokeWidth={1.5} />
-              <h3 className="text-xl font-heading font-semibold text-zinc-950 mb-2">No hay cursos disponibles</h3>
+              <h3 className="text-xl font-heading font-semibold text-zinc-50 mb-2">No hay cursos disponibles</h3>
               <p className="text-zinc-600">Próximamente nuevos cursos</p>
             </div>
           ) : (
@@ -66,7 +66,7 @@ export const CoursesPage = () => {
                 <Link
                   key={course.course_id}
                   to={`/courses/${course.course_id}`}
-                  className="bg-white border border-zinc-200 rounded-lg overflow-hidden hover:-translate-y-1 hover:shadow-md hover:border-zinc-300 transition-all duration-200"
+                  className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:-translate-y-1 hover:shadow-md hover:border-zinc-700 transition-all duration-200"
                   data-testid={`course-card-${course.course_id}`}
                 >
                   <img
@@ -75,7 +75,7 @@ export const CoursesPage = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-6">
-                    <h3 className="text-lg font-heading font-semibold text-zinc-950 mb-2">{course.title}</h3>
+                    <h3 className="text-lg font-heading font-semibold text-zinc-50 mb-2">{course.title}</h3>
                     <p className="text-sm text-zinc-600 mb-4 line-clamp-3">{course.description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-zinc-500">Por {course.instructor_name}</span>
@@ -142,7 +142,7 @@ export const CourseDetailPage = () => {
       <div className="flex h-screen">
         <Sidebar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-950"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
         </div>
       </div>
     );
@@ -163,11 +163,11 @@ export const CourseDetailPage = () => {
   const completedLessons = progress?.completed_lessons || [];
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA]" data-testid="course-detail-page">
+    <div className="flex h-screen bg-[#0A0A0A]" data-testid="course-detail-page">
       <Sidebar />
       <div className="flex-1 overflow-auto">
         <div className="max-w-5xl mx-auto p-6 md:p-8">
-          <div className="bg-white border border-zinc-200 rounded-lg p-8 mb-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 mb-8">
             <div className="flex flex-col md:flex-row gap-8">
               <img
                 src={course.thumbnail}
@@ -175,7 +175,7 @@ export const CourseDetailPage = () => {
                 className="w-full md:w-64 h-48 object-cover rounded-lg"
               />
               <div className="flex-1">
-                <h1 className="text-3xl font-heading font-bold text-zinc-950 mb-2" data-testid="course-title">
+                <h1 className="text-3xl font-heading font-bold text-zinc-50 mb-2" data-testid="course-title">
                   {course.title}
                 </h1>
                 <p className="text-zinc-600 mb-4">{course.description}</p>
@@ -190,7 +190,7 @@ export const CourseDetailPage = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-zinc-600">Progreso del curso</span>
-                      <span className="font-medium text-zinc-950">{Math.round(progressPercent)}%</span>
+                      <span className="font-medium text-zinc-50">{Math.round(progressPercent)}%</span>
                     </div>
                     <Progress value={progressPercent} className="h-2" />
                   </div>
@@ -199,8 +199,8 @@ export const CourseDetailPage = () => {
             </div>
           </div>
 
-          <div className="bg-white border border-zinc-200 rounded-lg p-8">
-            <h2 className="text-2xl font-heading font-semibold text-zinc-950 mb-6">Contenido del Curso</h2>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
+            <h2 className="text-2xl font-heading font-semibold text-zinc-50 mb-6">Contenido del Curso</h2>
             {lessons.length === 0 ? (
               <p className="text-zinc-600 text-center py-8">No hay lecciones disponibles aún</p>
             ) : (
@@ -211,7 +211,7 @@ export const CourseDetailPage = () => {
                     <button
                       key={lesson.lesson_id}
                       onClick={() => handleStartLesson(lesson.lesson_id)}
-                      className="w-full flex items-center gap-4 p-4 border border-zinc-200 rounded-lg hover:bg-zinc-50 hover:border-zinc-300 transition-all duration-200 text-left"
+                      className="w-full flex items-center gap-4 p-4 border border-zinc-800 rounded-lg hover:bg-zinc-900 hover:border-zinc-700 transition-all duration-200 text-left"
                       data-testid={`lesson-item-${lesson.lesson_id}`}
                     >
                       <div className="flex-shrink-0">
@@ -222,7 +222,7 @@ export const CourseDetailPage = () => {
                         )}
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-zinc-950 mb-1">
+                        <h3 className="font-medium text-zinc-50 mb-1">
                           {index + 1}. {lesson.title}
                         </h3>
                         {lesson.duration > 0 && (

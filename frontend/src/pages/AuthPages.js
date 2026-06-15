@@ -48,11 +48,11 @@ export const LoginPage = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8" data-testid="login-form-container">
         <div className="w-full max-w-md">
           <Link to="/" className="flex items-center gap-2 mb-8">
-            <BookOpen className="h-8 w-8 text-zinc-950" strokeWidth={1.5} />
-            <span className="text-2xl font-heading font-bold text-zinc-950">Cursos</span>
+            <BookOpen className="h-8 w-8 text-zinc-50" strokeWidth={1.5} />
+            <span className="text-2xl font-heading font-bold text-zinc-50">Cursos</span>
           </Link>
 
-          <h1 className="text-3xl font-heading font-bold text-zinc-950 mb-2">Iniciar Sesión</h1>
+          <h1 className="text-3xl font-heading font-bold text-zinc-50 mb-2">Iniciar Sesión</h1>
           <p className="text-zinc-600 mb-8">Accede a tu cuenta para continuar aprendiendo</p>
 
           <form onSubmit={handleLogin} className="space-y-6">
@@ -102,7 +102,7 @@ export const LoginPage = () => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-zinc-200" />
+              <div className="w-full border-t border-zinc-800" />
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-white text-zinc-500">O continuar con</span>
@@ -122,7 +122,7 @@ export const LoginPage = () => {
 
           <p className="text-center text-zinc-600 mt-6">
             ¿No tienes cuenta?{' '}
-            <Link to="/register" className="text-zinc-950 font-medium hover:underline" data-testid="go-to-register-link">
+            <Link to="/register" className="text-zinc-50 font-medium hover:underline" data-testid="go-to-register-link">
               Regístrate
             </Link>
           </p>
@@ -174,11 +174,11 @@ export const RegisterPage = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8" data-testid="register-form-container">
         <div className="w-full max-w-md">
           <Link to="/" className="flex items-center gap-2 mb-8">
-            <BookOpen className="h-8 w-8 text-zinc-950" strokeWidth={1.5} />
-            <span className="text-2xl font-heading font-bold text-zinc-950">Cursos</span>
+            <BookOpen className="h-8 w-8 text-zinc-50" strokeWidth={1.5} />
+            <span className="text-2xl font-heading font-bold text-zinc-50">Cursos</span>
           </Link>
 
-          <h1 className="text-3xl font-heading font-bold text-zinc-950 mb-2">Crear Cuenta</h1>
+          <h1 className="text-3xl font-heading font-bold text-zinc-50 mb-2">Crear Cuenta</h1>
           <p className="text-zinc-600 mb-8">Comienza tu viaje de aprendizaje hoy</p>
 
           <form onSubmit={handleRegister} className="space-y-6">
@@ -245,7 +245,7 @@ export const RegisterPage = () => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-zinc-200" />
+              <div className="w-full border-t border-zinc-800" />
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-white text-zinc-500">O continuar con</span>
@@ -265,7 +265,7 @@ export const RegisterPage = () => {
 
           <p className="text-center text-zinc-600 mt-6">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="text-zinc-950 font-medium hover:underline" data-testid="go-to-login-link">
+            <Link to="/login" className="text-zinc-50 font-medium hover:underline" data-testid="go-to-login-link">
               Inicia sesión
             </Link>
           </p>

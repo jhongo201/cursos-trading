@@ -85,7 +85,7 @@ export const LessonPage = () => {
       <div className="flex h-screen">
         <Sidebar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-950"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
         </div>
       </div>
     );
@@ -103,13 +103,13 @@ export const LessonPage = () => {
   }
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA]" data-testid="lesson-page">
+    <div className="flex h-screen bg-[#0A0A0A]" data-testid="lesson-page">
       <Sidebar />
       <div className="flex-1 overflow-auto">
         <div className="max-w-5xl mx-auto p-6 md:p-8">
           <Link
             to={`/courses/${courseId}`}
-            className="inline-flex items-center gap-2 text-zinc-600 hover:text-zinc-950 mb-6 transition-colors"
+            className="inline-flex items-center gap-2 text-zinc-600 hover:text-zinc-50 mb-6 transition-colors"
             data-testid="back-to-course-link"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -156,10 +156,10 @@ export const LessonPage = () => {
             )}
           </div>
 
-          <div className="bg-white border border-zinc-200 rounded-lg p-8 mb-6">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 mb-6">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-heading font-bold text-zinc-950 mb-2" data-testid="lesson-title">
+                <h1 className="text-2xl sm:text-3xl font-heading font-bold text-zinc-50 mb-2" data-testid="lesson-title">
                   {lesson.title}
                 </h1>
                 <p className="text-sm text-zinc-500">Curso: {course?.title}</p>

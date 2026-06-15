@@ -51,14 +51,14 @@ export const PaymentSuccessPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA]">
+    <div className="flex h-screen bg-[#0A0A0A]">
       <Sidebar />
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-md w-full bg-white border border-zinc-200 rounded-lg p-8 text-center">
+        <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
           {status === 'checking' && (
             <>
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-zinc-950 mx-auto mb-6"></div>
-              <h2 className="text-2xl font-heading font-bold text-zinc-950 mb-2">Verificando pago...</h2>
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-500 mx-auto mb-6"></div>
+              <h2 className="text-2xl font-heading font-bold text-zinc-50 mb-2">Verificando pago...</h2>
               <p className="text-zinc-600">Por favor espera mientras confirmamos tu pago</p>
             </>
           )}
@@ -66,7 +66,7 @@ export const PaymentSuccessPage = () => {
           {status === 'success' && (
             <>
               <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-6" strokeWidth={1.5} />
-              <h2 className="text-2xl font-heading font-bold text-zinc-950 mb-2">¡Pago Exitoso!</h2>
+              <h2 className="text-2xl font-heading font-bold text-zinc-50 mb-2">¡Pago Exitoso!</h2>
               <p className="text-zinc-600 mb-6">Tu suscripción ha sido activada. Ya puedes acceder a todos los cursos.</p>
               <Button onClick={() => navigate('/dashboard')} data-testid="go-to-dashboard-btn">
                 Ir al Dashboard
@@ -79,7 +79,7 @@ export const PaymentSuccessPage = () => {
               <div className="h-16 w-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-2xl">⏳</span>
               </div>
-              <h2 className="text-2xl font-heading font-bold text-zinc-950 mb-2">Pago en proceso</h2>
+              <h2 className="text-2xl font-heading font-bold text-zinc-50 mb-2">Pago en proceso</h2>
               <p className="text-zinc-600 mb-6">Tu pago está siendo procesado. Recibirás un correo de confirmación.</p>
               <Button onClick={() => navigate('/dashboard')} variant="outline">
                 Volver al Dashboard
@@ -90,7 +90,7 @@ export const PaymentSuccessPage = () => {
           {status === 'error' && (
             <>
               <XCircle className="h-16 w-16 text-red-500 mx-auto mb-6" strokeWidth={1.5} />
-              <h2 className="text-2xl font-heading font-bold text-zinc-950 mb-2">Error en el pago</h2>
+              <h2 className="text-2xl font-heading font-bold text-zinc-50 mb-2">Error en el pago</h2>
               <p className="text-zinc-600 mb-6">Hubo un problema al procesar tu pago. Por favor inténtalo de nuevo.</p>
               <Button onClick={() => navigate('/pricing')}>
                 Volver a Pricing

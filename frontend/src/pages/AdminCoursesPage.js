@@ -122,19 +122,19 @@ export const AdminCoursesPage = () => {
       <div className="flex h-screen">
         <Sidebar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zinc-950"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA]" data-testid="admin-courses-page">
+    <div className="flex h-screen bg-[#0A0A0A]" data-testid="admin-courses-page">
       <Sidebar />
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6 md:p-8">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl sm:text-4xl font-heading font-bold text-zinc-950">
+            <h1 className="text-3xl sm:text-4xl font-heading font-bold text-zinc-50">
               Gestionar Cursos
             </h1>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -186,7 +186,7 @@ export const AdminCoursesPage = () => {
                           className={`border-2 rounded-lg overflow-hidden transition-all ${
                             formData.thumbnail === thumb
                               ? 'border-zinc-950 ring-2 ring-zinc-950'
-                              : 'border-zinc-200 hover:border-zinc-300'
+                              : 'border-zinc-800 hover:border-zinc-700'
                           }`}
                         >
                           <img src={thumb} alt={`Thumbnail ${idx + 1}`} className="w-full h-24 object-cover" />
@@ -208,9 +208,9 @@ export const AdminCoursesPage = () => {
           </div>
 
           {courses.length === 0 ? (
-            <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
               <BookOpen className="h-12 w-12 text-zinc-400 mx-auto mb-4" strokeWidth={1.5} />
-              <h3 className="text-xl font-heading font-semibold text-zinc-950 mb-2">
+              <h3 className="text-xl font-heading font-semibold text-zinc-50 mb-2">
                 No hay cursos creados
               </h3>
               <p className="text-zinc-600">Crea tu primer curso para comenzar</p>
@@ -220,7 +220,7 @@ export const AdminCoursesPage = () => {
               {courses.map((course) => (
                 <div
                   key={course.course_id}
-                  className="bg-white border border-zinc-200 rounded-lg overflow-hidden"
+                  className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden"
                   data-testid={`admin-course-${course.course_id}`}
                 >
                   <img
@@ -229,7 +229,7 @@ export const AdminCoursesPage = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-6">
-                    <h3 className="text-lg font-heading font-semibold text-zinc-950 mb-2">
+                    <h3 className="text-lg font-heading font-semibold text-zinc-50 mb-2">
                       {course.title}
                     </h3>
                     <p className="text-sm text-zinc-600 mb-4 line-clamp-2">

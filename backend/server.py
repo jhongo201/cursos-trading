@@ -101,12 +101,17 @@ class Course(BaseModel):
     instructor_id: str
     instructor_name: str
     lesson_count: int = 0
+    category_id: Optional[str] = None
+    category_name: Optional[str] = None
+    average_rating: float = 0.0
+    total_ratings: int = 0
     created_at: str
 
 class CourseCreate(BaseModel):
     title: str
     description: str
     thumbnail: str
+    category_id: Optional[str] = None
 
 class Lesson(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -145,6 +150,45 @@ class CheckoutRequest(BaseModel):
 
 class GoogleSessionRequest(BaseModel):
     session_id: str
+
+class Comment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    comment_id: str
+    lesson_id: str
+    user_id: str
+    user_name: str
+    user_picture: Optional[str] = None
+    content: str
+    created_at: str
+
+class CommentCreate(BaseModel):
+    content: str
+
+class Rating(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    rating_id: str
+    course_id: str
+    user_id: str
+    rating: int
+    review: Optional[str] = None
+    created_at: str
+
+class RatingCreate(BaseModel):
+    rating: int
+    review: Optional[str] = None
+
+class Category(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    category_id: str
+    name: str
+    description: str
+    icon: str
+    created_at: str
+
+class CategoryCreate(BaseModel):
+    name: str
+    description: str
+    icon: str
 
 async def get_current_user(authorization: Optional[str] = Header(None), session_token: Optional[str] = Cookie(None)) -> User:
     token = None
@@ -465,6 +509,13 @@ async def create_course(req: CourseCreate, current_user: User = Depends(get_curr
         raise HTTPException(status_code=403, detail="Admin access required")
     
     course_id = f"course_{uuid.uuid4().hex[:12]}"
+    
+    category_name = None
+    if req.category_id:
+        category = await db.categories.find_one({"category_id": req.category_id}, {"_id": 0})
+        if category:
+            category_name = category["name"]
+    
     course_doc = {
         "course_id": course_id,
         "title": req.title,
@@ -473,6 +524,10 @@ async def create_course(req: CourseCreate, current_user: User = Depends(get_curr
         "instructor_id": current_user.user_id,
         "instructor_name": current_user.name,
         "lesson_count": 0,
+        "category_id": req.category_id,
+        "category_name": category_name,
+        "average_rating": 0.0,
+        "total_ratings": 0,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.courses.insert_one(course_doc)
@@ -490,12 +545,20 @@ async def update_course(course_id: str, req: CourseCreate, current_user: User = 
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     
+    category_name = None
+    if req.category_id:
+        category = await db.categories.find_one({"category_id": req.category_id}, {"_id": 0})
+        if category:
+            category_name = category["name"]
+    
     await db.courses.update_one(
         {"course_id": course_id},
         {"$set": {
             "title": req.title,
             "description": req.description,
-            "thumbnail": req.thumbnail
+            "thumbnail": req.thumbnail,
+            "category_id": req.category_id,
+            "category_name": category_name
         }}
     )
     
@@ -745,6 +808,170 @@ async def download_file(path: str, authorization: str = Header(None), auth: str 
         logger.error(f"Download error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# Categories endpoints
+@api_router.get("/categories")
+async def get_categories():
+    categories = await db.categories.find({}, {"_id": 0}).to_list(1000)
+    return categories
+
+@api_router.post("/categories")
+async def create_category(req: CategoryCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    category_id = f"cat_{uuid.uuid4().hex[:12]}"
+    category_doc = {
+        "category_id": category_id,
+        "name": req.name,
+        "description": req.description,
+        "icon": req.icon,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.categories.insert_one(category_doc)
+    
+    category = await db.categories.find_one({"category_id": category_id}, {"_id": 0})
+    return Category(**category)
+
+# Ratings endpoints
+@api_router.get("/courses/{course_id}/ratings")
+async def get_course_ratings(course_id: str):
+    ratings = await db.ratings.find({"course_id": course_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return ratings
+
+@api_router.post("/courses/{course_id}/ratings")
+async def create_rating(course_id: str, req: RatingCreate, current_user: User = Depends(get_current_user)):
+    existing = await db.ratings.find_one({"course_id": course_id, "user_id": current_user.user_id})
+    
+    if existing:
+        await db.ratings.update_one(
+            {"course_id": course_id, "user_id": current_user.user_id},
+            {"$set": {"rating": req.rating, "review": req.review}}
+        )
+    else:
+        rating_doc = {
+            "rating_id": f"rating_{uuid.uuid4().hex[:12]}",
+            "course_id": course_id,
+            "user_id": current_user.user_id,
+            "rating": req.rating,
+            "review": req.review,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.ratings.insert_one(rating_doc)
+    
+    # Update course average rating
+    ratings = await db.ratings.find({"course_id": course_id}, {"_id": 0}).to_list(1000)
+    if ratings:
+        avg_rating = sum(r["rating"] for r in ratings) / len(ratings)
+        await db.courses.update_one(
+            {"course_id": course_id},
+            {"$set": {"average_rating": avg_rating, "total_ratings": len(ratings)}}
+        )
+    
+    return {"message": "Rating submitted"}
+
+# Comments endpoints
+@api_router.get("/lessons/{lesson_id}/comments")
+async def get_lesson_comments(lesson_id: str):
+    comments = await db.comments.find({"lesson_id": lesson_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return comments
+
+@api_router.post("/lessons/{lesson_id}/comments")
+async def create_comment(lesson_id: str, req: CommentCreate, current_user: User = Depends(get_current_user)):
+    comment_doc = {
+        "comment_id": f"comment_{uuid.uuid4().hex[:12]}",
+        "lesson_id": lesson_id,
+        "user_id": current_user.user_id,
+        "user_name": current_user.name,
+        "user_picture": current_user.picture,
+        "content": req.content,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.comments.insert_one(comment_doc)
+    
+    comment = await db.comments.find_one({"comment_id": comment_doc["comment_id"]}, {"_id": 0})
+    return Comment(**comment)
+
+@api_router.delete("/comments/{comment_id}")
+async def delete_comment(comment_id: str, current_user: User = Depends(get_current_user)):
+    comment = await db.comments.find_one({"comment_id": comment_id})
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    
+    if comment["user_id"] != current_user.user_id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.comments.delete_one({"comment_id": comment_id})
+    return {"message": "Comment deleted"}
+
+# Analytics endpoints
+@api_router.get("/admin/analytics")
+async def get_analytics(current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    total_users = await db.users.count_documents({})
+    active_subscriptions = await db.users.count_documents({"subscription_status": "active"})
+    total_courses = await db.courses.count_documents({})
+    total_lessons = await db.lessons.count_documents({})
+    
+    # Revenue calculation
+    transactions = await db.payment_transactions.find({"payment_status": "paid"}, {"_id": 0}).to_list(10000)
+    total_revenue = sum(t.get("amount", 0) for t in transactions)
+    monthly_revenue = sum(t.get("amount", 0) for t in transactions if t.get("plan_id") == "monthly")
+    annual_revenue = sum(t.get("amount", 0) for t in transactions if t.get("plan_id") == "annual")
+    
+    # Recent registrations
+    recent_users = await db.users.find({}, {"_id": 0}).sort("created_at", -1).limit(30).to_list(30)
+    
+    # Conversion rate
+    conversion_rate = (active_subscriptions / total_users * 100) if total_users > 0 else 0
+    
+    return {
+        "total_users": total_users,
+        "active_subscriptions": active_subscriptions,
+        "inactive_users": total_users - active_subscriptions,
+        "total_courses": total_courses,
+        "total_lessons": total_lessons,
+        "total_revenue": round(total_revenue, 2),
+        "monthly_revenue": round(monthly_revenue, 2),
+        "annual_revenue": round(annual_revenue, 2),
+        "conversion_rate": round(conversion_rate, 2),
+        "recent_users": recent_users[:10]
+    }
+
+# Search and filter endpoints
+@api_router.get("/courses/search")
+async def search_courses(
+    q: Optional[str] = Query(None),
+    category_id: Optional[str] = Query(None),
+    sort: Optional[str] = Query("recent")
+):
+    query = {}
+    
+    if q:
+        query["$or"] = [
+            {"title": {"$regex": q, "$options": "i"}},
+            {"description": {"$regex": q, "$options": "i"}}
+        ]
+    
+    if category_id:
+        query["category_id"] = category_id
+    
+    # Sort options
+    sort_options = {
+        "recent": ("created_at", -1),
+        "popular": ("total_ratings", -1),
+        "rating": ("average_rating", -1),
+        "title": ("title", 1)
+    }
+    
+    sort_field, sort_direction = sort_options.get(sort, ("created_at", -1))
+    
+    courses = await db.courses.find(query, {"_id": 0}).sort(sort_field, sort_direction).to_list(1000)
+    return courses
+
+
 app.include_router(api_router)
 
 app.add_middleware(
@@ -798,6 +1025,19 @@ async def startup():
             }
             await db.users.insert_one(student_doc)
             logger.info("Test student user created")
+        
+        # Create default categories
+        categories_count = await db.categories.count_documents({})
+        if categories_count == 0:
+            default_categories = [
+                {"category_id": f"cat_{uuid.uuid4().hex[:12]}", "name": "Programación", "description": "Cursos de desarrollo de software", "icon": "Code", "created_at": datetime.now(timezone.utc).isoformat()},
+                {"category_id": f"cat_{uuid.uuid4().hex[:12]}", "name": "Diseño", "description": "Cursos de diseño gráfico y UX/UI", "icon": "Palette", "created_at": datetime.now(timezone.utc).isoformat()},
+                {"category_id": f"cat_{uuid.uuid4().hex[:12]}", "name": "Negocios", "description": "Cursos de emprendimiento y gestión", "icon": "Briefcase", "created_at": datetime.now(timezone.utc).isoformat()},
+                {"category_id": f"cat_{uuid.uuid4().hex[:12]}", "name": "Marketing", "description": "Cursos de marketing digital", "icon": "TrendingUp", "created_at": datetime.now(timezone.utc).isoformat()},
+                {"category_id": f"cat_{uuid.uuid4().hex[:12]}", "name": "Datos", "description": "Cursos de ciencia de datos y análisis", "icon": "BarChart", "created_at": datetime.now(timezone.utc).isoformat()},
+            ]
+            await db.categories.insert_many(default_categories)
+            logger.info("Default categories created")
         
         logger.info("Storage and users initialized")
     except Exception as e:

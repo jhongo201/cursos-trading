@@ -71,12 +71,12 @@ export const PricingPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA]" data-testid="pricing-page">
+    <div className="flex h-screen bg-[#0A0A0A]" data-testid="pricing-page">
       <Sidebar />
       <div className="flex-1 overflow-auto">
         <div className="max-w-6xl mx-auto p-6 md:p-8">
           <div className="text-center mb-12">
-            <h1 className="text-3xl sm:text-4xl font-heading font-bold text-zinc-950 mb-4">
+            <h1 className="text-3xl sm:text-4xl font-heading font-bold text-zinc-50 mb-4">
               Elige tu Plan
             </h1>
             <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
@@ -88,7 +88,7 @@ export const PricingPage = () => {
             {plans.map((plan) => (
               <div
                 key={plan.id}
-                className="bg-white border border-zinc-200 rounded-lg p-8 hover:-translate-y-1 hover:shadow-lg hover:border-zinc-300 transition-all duration-200 relative"
+                className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 hover:-translate-y-1 hover:shadow-lg hover:border-zinc-700 transition-all duration-200 relative"
                 data-testid={`plan-${plan.id}`}
               >
                 {plan.badge && (
@@ -96,9 +96,9 @@ export const PricingPage = () => {
                     {plan.badge}
                   </div>
                 )}
-                <h3 className="text-2xl font-heading font-bold text-zinc-950 mb-2">{plan.name}</h3>
+                <h3 className="text-2xl font-heading font-bold text-zinc-50 mb-2">{plan.name}</h3>
                 <div className="mb-6">
-                  <span className="text-4xl font-heading font-bold text-zinc-950">{plan.price}</span>
+                  <span className="text-4xl font-heading font-bold text-zinc-50">{plan.price}</span>
                   <span className="text-zinc-600">{plan.interval}</span>
                 </div>
                 <ul className="space-y-3 mb-8">
