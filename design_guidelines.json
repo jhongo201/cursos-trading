@@ -1,0 +1,110 @@
+{
+  "theme": "Light",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "emotional_tone": "Authoritative, modern, functional, minimal, trustworthy",
+  "typography": {
+    "font_families": {
+      "headings": "Satoshi, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "hierarchy_rules": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tighter leading-none text-zinc-950",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-zinc-950",
+      "h3": "text-xl sm:text-2xl font-medium tracking-tight text-zinc-900",
+      "h4": "text-lg sm:text-xl font-medium tracking-tight text-zinc-900",
+      "body": "text-base text-zinc-600 leading-relaxed",
+      "small_labels": "text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+    }
+  },
+  "colors": {
+    "background": {
+      "page": "#FAFAFA",
+      "surface": "#FFFFFF",
+      "glass": "rgba(255, 255, 255, 0.7)"
+    },
+    "text": {
+      "primary": "#0A0A0A",
+      "secondary": "#71717A",
+      "muted": "#A1A1AA",
+      "inverse": "#FFFFFF"
+    },
+    "brand_accents": {
+      "primary_cta": "#0A0A0A",
+      "primary_cta_hover": "#27272A",
+      "success_progress": "#10B981",
+      "warning": "#F59E0B",
+      "danger": "#EF4444"
+    },
+    "ui_elements": {
+      "border": "#E4E4E7",
+      "border_hover": "#D4D4D8",
+      "divider": "#F4F4F5"
+    }
+  },
+  "layout": {
+    "spacing_scale": "Generous spacing. Use p-6, p-8, p-12 for containers. Avoid tight paddings.",
+    "dashboard_grid": "Control Room Grid. Base: grid-cols-1 md:grid-cols-3 lg:grid-cols-4. Gap: gap-6. KPI summary widgets span 1 col. Charts span 2-3 cols. Activity feeds span 1 col vertically.",
+    "alignment": "Mobile-first responsive. Paragraphs and dense content must be left-aligned. Center alignment only for empty states or standalone generic alerts.",
+    "max_width": "max-w-7xl mx-auto for general views. Fluid widths (w-full) for the main dashboard content area beside the sidebar."
+  },
+  "surfaces_and_micro_themes": {
+    "dashboard_cards": "Flat solid background (bg-white), 1px solid border (border-zinc-200), no shadow by default. On hover: slight lift (-translate-y-1), subtle shadow (shadow-md), border darkens (border-zinc-300).",
+    "top_navigation": "Crystal Glassmorphism. bg-white/70 with backdrop-blur-xl. 1px delicate bottom border (border-zinc-200).",
+    "sidebar": "Solid flat background (bg-zinc-50), 1px solid right border (border-zinc-200). Active state for links uses bg-zinc-100 and text-zinc-950.",
+    "radius": "Minimal. Use rounded-md (6px) or rounded-lg (8px) for cards, inputs, and buttons. Never use excessive rounding."
+  },
+  "motion_and_interactions": {
+    "hover_states": "All interactive elements must change on hover. Buttons should darken, text should increase in contrast. Use transition-all duration-200 ease-in-out.",
+    "click_states": "active:scale-95 for buttons.",
+    "entrance_animations": "Staggered fade-in-up for lists and grids. Use Framer Motion (initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}).",
+    "accessibility": "Respect prefers-reduced-motion. High contrast focus rings (focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2)."
+  },
+  "components_instructions": {
+    "buttons": "Primary: Solid black (bg-zinc-950 text-white hover:bg-zinc-800). Secondary: Outline (bg-transparent border border-zinc-200 text-zinc-900 hover:bg-zinc-50). Ghost: Transparent (hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950).",
+    "inputs_and_forms": "Use Shadcn UI. Customize with rounded-md and border-zinc-200. Focus state must use black ring.",
+    "tables_and_lists": "Go cardless or rectangular dense styles. Use 1px bottom borders for rows. Left-aligned data. Empty states must be clearly designed with an icon and CTA.",
+    "data_visualization": "Use Shadcn charts (Recharts). Stick to minimalist styles: remove grid lines if possible, use solid zinc or emerald colors for bars/lines.",
+    "video_player": "Dark minimal container (bg-zinc-950) for the video block to provide contrast and focus. Standard HTML5/React video player with customized minimal controls.",
+    "progress_bars": "1px to 4px thin height line. bg-zinc-200 base, bg-emerald-500 fill. Smooth width transitions."
+  },
+  "icons_and_assets": {
+    "library": "lucide-react",
+    "usage": "Use stroke-width 1.5 or 2 for clarity. Sizes: 16px to 20px generally, 24px for key empty state illustrations.",
+    "media": {
+      "student_avatar_1": {
+        "url": "https://images.unsplash.com/photo-1513258496099-48168024aec0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwyfHxzdHVkZW50JTIwc3R1ZHlpbmclMjBsYXB0b3AlMjBtaW5pbWFsfGVufDB8fHx8MTc4MTQ4NzExOXww&ixlib=rb-4.1.0&q=85",
+        "description": "Avatar placeholder for student profile."
+      },
+      "student_avatar_2": {
+        "url": "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwzfHxzdHVkZW50JTIwc3R1ZHlpbmclMjBsYXB0b3AlMjBtaW5pbWFsfGVufDB8fHx8MTc4MTQ4NzEyMHww&ixlib=rb-4.1.0&q=85",
+        "description": "Alternate avatar placeholder for student profile."
+      },
+      "course_thumbnail_1": {
+        "url": "https://images.pexels.com/photos/7078411/pexels-photo-7078411.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Minimalist white architecture, to be used as abstract course cover for 'Design Foundations'."
+      },
+      "course_thumbnail_2": {
+        "url": "https://images.pexels.com/photos/34133564/pexels-photo-34133564.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "White minimalist building facade, to be used as course cover for 'Advanced Architectures'."
+      },
+      "course_thumbnail_3": {
+        "url": "https://images.unsplash.com/photo-1709626011485-6fe000ea2dbc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMGdlb21ldHJpYyUyMG1pbmltYWx8ZW58MHx8fHwxNzgxNDg3MTIwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract geometric black and blue, course cover for 'Data Engineering'."
+      },
+      "auth_background": {
+        "url": "https://images.pexels.com/photos/30938848/pexels-photo-30938848.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Abstract composition for login/register page background side-panel."
+      }
+    }
+  },
+  "testing_requirements": "All interactive and key informational elements MUST include a 'data-testid' attribute (e.g., data-testid='course-card', data-testid='play-video-button', data-testid='login-submit').",
+  "instructions_to_main_agent": [
+    "Strictly follow the JSON guidelines for color, typography, and spacing.",
+    "Do NOT use HTML inputs for complex forms; use Shadcn UI components.",
+    "Apply Spanish (es) for all UI text, headings, and dummy content.",
+    "Configure Tailwind with the specified color palette and font families.",
+    "Build a robust Dashboard layout using the 'Control Room Grid' mode and generous spacing rules.",
+    "Use the provided image URLs strictly for media—do NOT use dummy image placeholders."
+  ]
+}
