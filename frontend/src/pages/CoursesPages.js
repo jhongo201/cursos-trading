@@ -160,6 +160,7 @@ export const CourseDetailPage = () => {
       return;
     }
     navigate(`/courses/${courseId}/lesson/${lessonId}`);
+  };
 
   const handleSubmitRating = async () => {
     if (userRating === 0) {
@@ -181,8 +182,6 @@ export const CourseDetailPage = () => {
       console.error('Rating error:', error);
       toast.error('Error al enviar valoración');
     }
-  };
-
   };
 
   if (loading) {
