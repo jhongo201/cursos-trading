@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Sidebar } from '@/components/Sidebar';
+import { SocialShareButtons } from '@/components/SocialShareButtons';
 import { Award } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -75,13 +76,21 @@ export const CertificatesPage = () => {
                   <p className="text-sm text-zinc-600 mb-4">
                     Completado por {user?.name}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-zinc-500 mb-4">
                     Emitido: {new Date(cert.issued_at).toLocaleDateString('es-ES', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric'
                     })}
                   </p>
+                  <div className="pt-4 border-t border-zinc-800">
+                    <p className="text-sm text-zinc-400 mb-3">Compartir certificado:</p>
+                    <SocialShareButtons
+                      certificateId={cert.certificate_id}
+                      courseTitle={cert.course_title}
+                      userName={user?.name}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

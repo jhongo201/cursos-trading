@@ -14,6 +14,8 @@ import { CertificatesPage } from '@/pages/CertificatesPage';
 import { AdminCoursesPage } from '@/pages/AdminCoursesPage';
 import { AdminLessonsPage } from '@/pages/AdminLessonsPage';
 import { AnalyticsPage } from '@/pages/AnalyticsPage';
+import { AchievementsPage } from '@/pages/AchievementsPage';
+import { LiveSessionsPage } from '@/pages/LiveSessionsPage';
 import '@/App.css';
 
 function AppRouter() {
@@ -88,6 +90,24 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <CertificatesPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/achievements"
+        element={
+          <ProtectedRoute>
+            <AchievementsPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/live-sessions"
+        element={
+          <ProtectedRoute>
+            <LiveSessionsPage />
           </ProtectedRoute>
         }
       />

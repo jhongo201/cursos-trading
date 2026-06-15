@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, Home, GraduationCap, Award, CreditCard, LogOut, Settings, Plus, TrendingUp } from 'lucide-react';
+import { BookOpen, Home, GraduationCap, Award, CreditCard, LogOut, Settings, Plus, TrendingUp, Video, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/NotificationBell';
 
 export const Sidebar = () => {
   const location = useLocation();
@@ -16,6 +17,8 @@ export const Sidebar = () => {
   const navItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard', testId: 'nav-dashboard' },
     { path: '/courses', icon: GraduationCap, label: 'Cursos', testId: 'nav-courses' },
+    { path: '/live-sessions', icon: Video, label: 'Sesiones en Vivo', testId: 'nav-live-sessions' },
+    { path: '/achievements', icon: Trophy, label: 'Logros', testId: 'nav-achievements' },
     { path: '/certificates', icon: Award, label: 'Certificados', testId: 'nav-certificates' },
     { path: '/pricing', icon: CreditCard, label: 'Planes', testId: 'nav-pricing' },
   ];
@@ -28,10 +31,13 @@ export const Sidebar = () => {
   return (
     <div className="w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col h-screen" data-testid="sidebar">
       <div className="p-6 border-b border-zinc-800">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <BookOpen className="h-8 w-8 text-amber-500" strokeWidth={1.5} />
-          <span className="text-2xl font-heading font-bold text-zinc-50">Cursos</span>
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <BookOpen className="h-8 w-8 text-amber-500" strokeWidth={1.5} />
+            <span className="text-2xl font-heading font-bold text-zinc-50">Cursos</span>
+          </Link>
+          {user && <NotificationBell />}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">

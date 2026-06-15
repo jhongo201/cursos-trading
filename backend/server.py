@@ -190,6 +190,59 @@ class CategoryCreate(BaseModel):
     description: str
     icon: str
 
+class Notification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    notification_id: str
+    user_id: str
+    type: str
+    content: str
+    related_id: Optional[str] = None
+    read: bool = False
+    created_at: str
+
+class Achievement(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    achievement_id: str
+    name: str
+    description: str
+    icon: str
+    condition_type: str
+    condition_value: int
+
+class UserAchievement(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    achievement_id: str
+    achievement_name: str
+    achievement_description: str
+    achievement_icon: str
+    earned_at: str
+
+class LiveSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    session_id: str
+    course_id: str
+    course_title: str
+    title: str
+    description: str
+    instructor_id: str
+    instructor_name: str
+    scheduled_at: str
+    duration: int
+    meeting_url: Optional[str] = None
+    status: str
+    max_attendees: int
+    current_attendees: int
+    created_at: str
+
+class LiveSessionCreate(BaseModel):
+    course_id: str
+    title: str
+    description: str
+    scheduled_at: str
+    duration: int
+    max_attendees: int = 100
+
 async def get_current_user(authorization: Optional[str] = Header(None), session_token: Optional[str] = Cookie(None)) -> User:
     token = None
     if session_token:
@@ -730,6 +783,9 @@ async def update_progress(course_id: str, req: ProgressUpdate, current_user: Use
                 "issued_at": datetime.now(timezone.utc).isoformat()
             }
             await db.certificates.insert_one(cert_doc)
+            
+            # Check for achievements
+            await check_and_award_achievements(current_user.user_id)
     
     updated_progress = await db.user_progress.find_one(
         {"user_id": current_user.user_id, "course_id": course_id},
@@ -889,6 +945,23 @@ async def create_comment(lesson_id: str, req: CommentCreate, current_user: User 
     }
     await db.comments.insert_one(comment_doc)
     
+    # Get lesson and course info for notification
+    lesson = await db.lessons.find_one({"lesson_id": lesson_id}, {"_id": 0})
+    if lesson:
+        course = await db.courses.find_one({"course_id": lesson["course_id"]}, {"_id": 0})
+        if course and course["instructor_id"] != current_user.user_id:
+            # Notify course instructor
+            notif_doc = {
+                "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+                "user_id": course["instructor_id"],
+                "type": "comment",
+                "content": f"{current_user.name} comentó en la lección '{lesson['title']}'",
+                "related_id": lesson_id,
+                "read": False,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.notifications.insert_one(notif_doc)
+    
     comment = await db.comments.find_one({"comment_id": comment_doc["comment_id"]}, {"_id": 0})
     return Comment(**comment)
 
@@ -899,6 +972,231 @@ async def delete_comment(comment_id: str, current_user: User = Depends(get_curre
         raise HTTPException(status_code=404, detail="Comment not found")
     
     if comment["user_id"] != current_user.user_id and current_user.role != "admin":
+
+# Notifications endpoints
+@api_router.get("/notifications")
+async def get_notifications(current_user: User = Depends(get_current_user)):
+    notifications = await db.notifications.find(
+        {"user_id": current_user.user_id}, 
+        {"_id": 0}
+    ).sort("created_at", -1).limit(50).to_list(50)
+    return notifications
+
+@api_router.post("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, current_user: User = Depends(get_current_user)):
+    await db.notifications.update_one(
+        {"notification_id": notification_id, "user_id": current_user.user_id},
+        {"$set": {"read": True}}
+    )
+    return {"message": "Notification marked as read"}
+
+@api_router.post("/notifications/read-all")
+async def mark_all_notifications_read(current_user: User = Depends(get_current_user)):
+    await db.notifications.update_many(
+        {"user_id": current_user.user_id, "read": False},
+        {"$set": {"read": True}}
+    )
+    return {"message": "All notifications marked as read"}
+
+@api_router.get("/notifications/unread-count")
+async def get_unread_count(current_user: User = Depends(get_current_user)):
+    count = await db.notifications.count_documents({"user_id": current_user.user_id, "read": False})
+    return {"count": count}
+
+# Achievements endpoints
+@api_router.get("/achievements")
+async def get_achievements():
+    achievements = await db.achievements.find({}, {"_id": 0}).to_list(1000)
+    return achievements
+
+@api_router.get("/achievements/user")
+async def get_user_achievements(current_user: User = Depends(get_current_user)):
+    user_achievements = await db.user_achievements.find(
+        {"user_id": current_user.user_id}, 
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Enrich with achievement details
+    for ua in user_achievements:
+        achievement = await db.achievements.find_one({"achievement_id": ua["achievement_id"]}, {"_id": 0})
+        if achievement:
+            ua["achievement_name"] = achievement["name"]
+            ua["achievement_description"] = achievement["description"]
+            ua["achievement_icon"] = achievement["icon"]
+    
+    return user_achievements
+
+async def check_and_award_achievements(user_id: str):
+    """Check if user qualifies for new achievements"""
+    # Count completed courses
+    progress_docs = await db.user_progress.find({"user_id": user_id}, {"_id": 0}).to_list(1000)
+    completed_courses = sum(1 for p in progress_docs if p.get("progress_percentage", 0) >= 100)
+    
+    achievements_to_check = [
+        ("ach_first_course", "courses_completed", 1),
+        ("ach_5_courses", "courses_completed", 5),
+        ("ach_10_courses", "courses_completed", 10),
+    ]
+    
+    for ach_id, condition_type, required in achievements_to_check:
+        if condition_type == "courses_completed" and completed_courses >= required:
+            # Check if already earned
+            existing = await db.user_achievements.find_one({"user_id": user_id, "achievement_id": ach_id})
+            if not existing:
+                user_ach_doc = {
+                    "user_id": user_id,
+                    "achievement_id": ach_id,
+                    "earned_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.user_achievements.insert_one(user_ach_doc)
+                
+                # Create notification
+                achievement = await db.achievements.find_one({"achievement_id": ach_id}, {"_id": 0})
+                if achievement:
+                    notif_doc = {
+                        "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+                        "user_id": user_id,
+                        "type": "achievement",
+                        "content": f"¡Desbloqueaste el logro '{achievement['name']}'!",
+                        "related_id": ach_id,
+                        "read": False,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.notifications.insert_one(notif_doc)
+
+# Live Sessions endpoints
+@api_router.get("/live-sessions")
+async def get_live_sessions(status: Optional[str] = Query(None)):
+    query = {}
+    if status:
+        query["status"] = status
+    
+    sessions = await db.live_sessions.find(query, {"_id": 0}).sort("scheduled_at", 1).to_list(1000)
+    return sessions
+
+@api_router.get("/live-sessions/{session_id}")
+async def get_live_session(session_id: str):
+    session = await db.live_sessions.find_one({"session_id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session
+
+@api_router.post("/live-sessions")
+async def create_live_session(req: LiveSessionCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    course = await db.courses.find_one({"course_id": req.course_id}, {"_id": 0})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    session_id = f"session_{uuid.uuid4().hex[:12]}"
+    
+    # Generate Daily.co room (simulated - in production use Daily.co API)
+    meeting_url = f"https://emergent.daily.co/{session_id}"
+    
+    session_doc = {
+        "session_id": session_id,
+        "course_id": req.course_id,
+        "course_title": course["title"],
+        "title": req.title,
+        "description": req.description,
+        "instructor_id": current_user.user_id,
+        "instructor_name": current_user.name,
+        "scheduled_at": req.scheduled_at,
+        "duration": req.duration,
+        "meeting_url": meeting_url,
+        "status": "scheduled",
+        "max_attendees": req.max_attendees,
+        "current_attendees": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.live_sessions.insert_one(session_doc)
+    
+    session = await db.live_sessions.find_one({"session_id": session_id}, {"_id": 0})
+    return LiveSession(**session)
+
+@api_router.post("/live-sessions/{session_id}/register")
+async def register_for_session(session_id: str, current_user: User = Depends(get_current_user)):
+    session = await db.live_sessions.find_one({"session_id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session["current_attendees"] >= session["max_attendees"]:
+        raise HTTPException(status_code=400, detail="Session is full")
+    
+    # Check if already registered
+    existing = await db.session_registrations.find_one({
+        "session_id": session_id,
+        "user_id": current_user.user_id
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Already registered")
+    
+    reg_doc = {
+        "user_id": current_user.user_id,
+        "session_id": session_id,
+        "registered_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.session_registrations.insert_one(reg_doc)
+    
+    # Update attendee count
+    await db.live_sessions.update_one(
+        {"session_id": session_id},
+        {"$inc": {"current_attendees": 1}}
+    )
+    
+    # Create notification
+    notif_doc = {
+        "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+        "user_id": current_user.user_id,
+        "type": "live_session",
+        "content": f"Te registraste para la sesión en vivo: {session['title']}",
+        "related_id": session_id,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.notifications.insert_one(notif_doc)
+    
+    return {"message": "Registered successfully", "meeting_url": session["meeting_url"]}
+
+@api_router.get("/live-sessions/{session_id}/registrations")
+async def get_session_registrations(session_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    registrations = await db.session_registrations.find(
+        {"session_id": session_id}, 
+        {"_id": 0}
+    ).to_list(1000)
+    return registrations
+
+@api_router.get("/certificates/{certificate_id}/share")
+async def get_certificate_share_url(certificate_id: str, current_user: User = Depends(get_current_user)):
+    """Generate shareable URL for certificate"""
+    cert = await db.certificates.find_one({"certificate_id": certificate_id}, {"_id": 0})
+    if not cert:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    
+    if cert["user_id"] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get course info
+    course = await db.courses.find_one({"course_id": cert["course_id"]}, {"_id": 0})
+    
+    base_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://edu-member.preview.emergentagent.com')
+    share_url = f"{base_url}/certificate/{certificate_id}"
+    
+    return {
+        "share_url": share_url,
+        "course_title": course["title"] if course else "Curso",
+        "user_name": current_user.name,
+        "twitter_text": f"¡Acabo de completar el curso '{course['title'] if course else 'curso'}' en Cursos! 🎓",
+        "linkedin_text": f"Orgulloso de haber completado el curso {course['title'] if course else 'curso'}"
+    }
+
+
         raise HTTPException(status_code=403, detail="Not authorized")
     
     await db.comments.delete_one({"comment_id": comment_id})
@@ -1038,6 +1336,19 @@ async def startup():
             ]
             await db.categories.insert_many(default_categories)
             logger.info("Default categories created")
+        
+        # Create default achievements
+        achievements_count = await db.achievements.count_documents({})
+        if achievements_count == 0:
+            default_achievements = [
+                {"achievement_id": "ach_first_course", "name": "Primer Paso", "description": "Completa tu primer curso", "icon": "Trophy", "condition_type": "courses_completed", "condition_value": 1},
+                {"achievement_id": "ach_5_courses", "name": "Estudiante Dedicado", "description": "Completa 5 cursos", "icon": "Award", "condition_type": "courses_completed", "condition_value": 5},
+                {"achievement_id": "ach_10_courses", "name": "Maestro del Aprendizaje", "description": "Completa 10 cursos", "icon": "Star", "condition_type": "courses_completed", "condition_value": 10},
+                {"achievement_id": "ach_early_bird", "name": "Madrugador", "description": "Asiste a 3 sesiones en vivo", "icon": "Sun", "condition_type": "live_sessions", "condition_value": 3},
+                {"achievement_id": "ach_social", "name": "Compartidor Social", "description": "Comparte 3 certificados en redes sociales", "icon": "Share2", "condition_type": "shares", "condition_value": 3},
+            ]
+            await db.achievements.insert_many(default_achievements)
+            logger.info("Default achievements created")
         
         logger.info("Storage and users initialized")
     except Exception as e:
