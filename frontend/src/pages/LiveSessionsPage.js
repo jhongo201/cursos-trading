@@ -3,10 +3,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Sidebar } from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
-import { Video, Calendar, Clock, Users, Check } from 'lucide-react';
+import { Video, Calendar, Clock, Users, Check, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const formatTimeRemaining = (seconds) => {
+  if (seconds <= 0) return 'Disponible ahora';
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 24) {
+    const days = Math.floor(hours / 24);
+    return `Disponible en ${days}d ${hours % 24}h`;
+  }
+  if (hours > 0) {
+    return `Disponible en ${hours}h ${minutes}m`;
+  }
+  return `Disponible en ${minutes}m`;
+};
 
 export const LiveSessionsPage = () => {
   const [sessions, setSessions] = useState([]);
@@ -160,15 +176,34 @@ export const LiveSessionsPage = () => {
                           <Check className="h-5 w-5" />
                           <span className="font-medium">Ya estás registrado</span>
                         </div>
-                        {session.meeting_url && (
+                        
+                        {session.meeting_url_available ? (
                           <Button
                             onClick={() => handleJoinSession(session.meeting_url)}
-                            variant="outline"
+                            variant="default"
                             className="w-full"
+                            disabled={!session.meeting_url}
                           >
                             <Video className="h-4 w-4 mr-2" />
                             Unirse a la Sesión
+                            {session.meeting_type === 'jitsi' && (
+                              <span className="ml-2 text-xs opacity-75">(Jitsi)</span>
+                            )}
                           </Button>
+                        ) : (
+                          <div className="space-y-2">
+                            <Button
+                              variant="outline"
+                              className="w-full cursor-not-allowed opacity-60"
+                              disabled
+                            >
+                              <Lock className="h-4 w-4 mr-2" />
+                              Enlace no disponible aún
+                            </Button>
+                            <p className="text-xs text-center text-zinc-500">
+                              {formatTimeRemaining(session.time_until_available)}
+                            </p>
+                          </div>
                         )}
                       </div>
                     ) : (

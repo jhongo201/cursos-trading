@@ -24,7 +24,9 @@ export const AdminLiveSessionsPage = () => {
     description: '',
     scheduled_at: '',
     duration: 60,
-    max_attendees: 100
+    max_attendees: 100,
+    meeting_type: 'jitsi',
+    external_meeting_url: ''
   });
 
   useEffect(() => {
@@ -53,12 +55,25 @@ export const AdminLiveSessionsPage = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/live-sessions`, formData, {
+      const payload = {
+        ...formData,
+        external_meeting_url: formData.meeting_type === 'external' ? formData.external_meeting_url : undefined
+      };
+      await axios.post(`${API}/live-sessions`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Sesión creada exitosamente');
       setDialogOpen(false);
-      setFormData({ course_id: '', title: '', description: '', scheduled_at: '', duration: 60, max_attendees: 100 });
+      setFormData({ 
+        course_id: '', 
+        title: '', 
+        description: '', 
+        scheduled_at: '', 
+        duration: 60, 
+        max_attendees: 100,
+        meeting_type: 'jitsi',
+        external_meeting_url: ''
+      });
       fetchData();
     } catch (error) {
       console.error('Create error:', error);
@@ -183,6 +198,45 @@ export const AdminLiveSessionsPage = () => {
                       data-testid="session-capacity-input"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="meeting_type">Tipo de Reunión</Label>
+                    <Select
+                      value={formData.meeting_type}
+                      onValueChange={(value) => setFormData({ ...formData, meeting_type: value, external_meeting_url: '' })}
+                      required
+                    >
+                      <SelectTrigger className="bg-zinc-800 border-zinc-700" data-testid="meeting-type-select">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-800 border-zinc-700 text-zinc-100">
+                        <SelectItem value="jitsi">🎥 Jitsi Meet (Gratis, Automático)</SelectItem>
+                        <SelectItem value="external">🔗 Enlace Externo (Zoom, Meet, Teams, etc.)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {formData.meeting_type === 'jitsi' 
+                        ? 'Se generará automáticamente un room de Jitsi gratis' 
+                        : 'El enlace se mostrará a estudiantes 1 hora antes'}
+                    </p>
+                  </div>
+                  {formData.meeting_type === 'external' && (
+                    <div>
+                      <Label htmlFor="external_meeting_url">Enlace de la Reunión</Label>
+                      <Input
+                        id="external_meeting_url"
+                        type="url"
+                        value={formData.external_meeting_url}
+                        onChange={(e) => setFormData({ ...formData, external_meeting_url: e.target.value })}
+                        className="bg-zinc-800 border-zinc-700 text-zinc-100"
+                        placeholder="https://zoom.us/j/123456789 o https://meet.google.com/abc-defg-hij"
+                        required={formData.meeting_type === 'external'}
+                        data-testid="external-url-input"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">
+                        Pega aquí el enlace de Zoom, Google Meet, Teams u otra plataforma
+                      </p>
+                    </div>
+                  )}
                   <div className="flex gap-3 justify-end">
                     <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                       Cancelar
@@ -236,8 +290,16 @@ export const AdminLiveSessionsPage = () => {
                         <div>Duración: {session.duration} min</div>
                         <div>Registrados: {session.current_attendees}/{session.max_attendees}</div>
                       </div>
-                      <div className="mt-3 text-xs text-zinc-500 bg-zinc-800 p-2 rounded">
-                        Meeting URL: {session.meeting_url}
+                      <div className="mt-3 flex items-center gap-2 text-xs text-zinc-400">
+                        <Video className="h-3 w-3" />
+                        {session.meeting_type === 'jitsi' ? (
+                          <span className="text-emerald-400">Jitsi Meet (Gratis)</span>
+                        ) : (
+                          <span className="text-blue-400">Enlace Externo</span>
+                        )}
+                      </div>
+                      <div className="mt-2 text-xs text-zinc-500 bg-zinc-800 p-2 rounded truncate">
+                        {session.meeting_url}
                       </div>
                     </div>
                   </div>

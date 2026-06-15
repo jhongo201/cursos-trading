@@ -243,6 +243,7 @@ class LiveSession(BaseModel):
     scheduled_at: str
     duration: int
     meeting_url: Optional[str] = None
+    meeting_type: str = "jitsi"
     status: str
     max_attendees: int
     current_attendees: int
@@ -255,6 +256,8 @@ class LiveSessionCreate(BaseModel):
     scheduled_at: str
     duration: int
     max_attendees: int = 100
+    meeting_type: str = "jitsi"  # "jitsi" or "external"
+    external_meeting_url: Optional[str] = None
 
 async def get_current_user(authorization: Optional[str] = Header(None), session_token: Optional[str] = Cookie(None)) -> User:
     token = None
@@ -1202,12 +1205,64 @@ async def check_and_award_achievements(user_id: str):
 
 # Live Sessions endpoints
 @api_router.get("/live-sessions")
-async def get_live_sessions(status: Optional[str] = Query(None)):
+async def get_live_sessions(
+    status: Optional[str] = Query(None), 
+    authorization: Optional[str] = Header(None),
+    session_token: Optional[str] = Cookie(None)
+):
     query = {}
     if status:
         query["status"] = status
     
     sessions = await db.live_sessions.find(query, {"_id": 0}).sort("scheduled_at", 1).to_list(1000)
+    
+    # Try to get current user (optional, for checking admin role)
+    current_user = None
+    try:
+        token = None
+        if session_token:
+            token = session_token
+        elif authorization and authorization.startswith("Bearer "):
+            token = authorization.replace("Bearer ", "")
+        
+        if token:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            user_doc = await db.users.find_one({"user_id": payload["user_id"]}, {"_id": 0, "password": 0})
+            if user_doc:
+                current_user = User(**user_doc)
+    except:
+        pass  # User not authenticated, continue anyway
+    
+    # Hide meeting_url if session is more than 1 hour away (for security)
+    now = datetime.now(timezone.utc)
+    for session in sessions:
+        try:
+            scheduled_at_str = session["scheduled_at"]
+            # Parse datetime and ensure it has timezone
+            if scheduled_at_str.endswith('Z'):
+                scheduled_at_str = scheduled_at_str.replace('Z', '+00:00')
+            scheduled_time = datetime.fromisoformat(scheduled_at_str)
+            # If naive, assume UTC
+            if scheduled_time.tzinfo is None:
+                scheduled_time = scheduled_time.replace(tzinfo=timezone.utc)
+            
+            time_until_session = scheduled_time - now
+            
+            # Only show meeting_url if less than 1 hour before session starts
+            if time_until_session.total_seconds() > 3600:  # 3600 seconds = 1 hour
+                session["meeting_url_available"] = False
+                session["time_until_available"] = int(time_until_session.total_seconds() - 3600)
+                # Keep meeting_url for admins, hide for students
+                if not current_user or current_user.role != "admin":
+                    session["meeting_url"] = None
+            else:
+                session["meeting_url_available"] = True
+                session["time_until_available"] = 0
+        except Exception as e:
+            # If there's any parsing error, make meeting available
+            session["meeting_url_available"] = True
+            session["time_until_available"] = 0
+    
     return sessions
 
 @api_router.get("/live-sessions/my-registrations")
@@ -1237,8 +1292,16 @@ async def create_live_session(req: LiveSessionCreate, current_user: User = Depen
     
     session_id = f"session_{uuid.uuid4().hex[:12]}"
     
-    # Generate Daily.co room (simulated - in production use Daily.co API)
-    meeting_url = f"https://emergent.daily.co/{session_id}"
+    # Generate meeting URL based on type
+    if req.meeting_type == "jitsi":
+        # Jitsi uses simple room names in URL, completely free and open source
+        meeting_url = f"https://meet.jit.si/CursosPlataform_{session_id}"
+    elif req.meeting_type == "external":
+        if not req.external_meeting_url:
+            raise HTTPException(status_code=400, detail="external_meeting_url is required for external meeting type")
+        meeting_url = req.external_meeting_url
+    else:
+        raise HTTPException(status_code=400, detail="Invalid meeting_type. Use 'jitsi' or 'external'")
     
     session_doc = {
         "session_id": session_id,
@@ -1251,6 +1314,7 @@ async def create_live_session(req: LiveSessionCreate, current_user: User = Depen
         "scheduled_at": req.scheduled_at,
         "duration": req.duration,
         "meeting_url": meeting_url,
+        "meeting_type": req.meeting_type,
         "status": "scheduled",
         "max_attendees": req.max_attendees,
         "current_attendees": 0,
