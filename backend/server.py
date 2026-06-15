@@ -972,6 +972,10 @@ async def delete_comment(comment_id: str, current_user: User = Depends(get_curre
         raise HTTPException(status_code=404, detail="Comment not found")
     
     if comment["user_id"] != current_user.user_id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.comments.delete_one({"comment_id": comment_id})
+    return {"message": "Comment deleted"}
 
 # Notifications endpoints
 @api_router.get("/notifications")
@@ -1195,12 +1199,6 @@ async def get_certificate_share_url(certificate_id: str, current_user: User = De
         "twitter_text": f"¡Acabo de completar el curso '{course['title'] if course else 'curso'}' en Cursos! 🎓",
         "linkedin_text": f"Orgulloso de haber completado el curso {course['title'] if course else 'curso'}"
     }
-
-
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    await db.comments.delete_one({"comment_id": comment_id})
-    return {"message": "Comment deleted"}
 
 # Analytics endpoints
 @api_router.get("/admin/analytics")
